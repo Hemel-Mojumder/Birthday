@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Birthday Night Scene</title>
+<link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Dancing+Script&display=swap" rel="stylesheet">
+<style>
+body {
+    margin: 0;
+    height: 100vh;
+    overflow: hidden;
+    font-family: 'Segoe UI', sans-serif;
+    background: #0b0c10;
+}
+
+/* ---------- BUTTON ---------- */
+.button-container {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 1000;
+}
+
+.fun-button {
+    padding: 20px 50px;
+    font-size: 24px;
+    font-weight: bold;
+    color: white;
+    background: linear-gradient(45deg, #ff4d6d, #ff85a2);
+    border: none;
+    border-radius: 15px;
+    cursor: pointer;
+    outline: none;
+    transition: transform 0.3s, box-shadow 0.3s;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+    font-family: 'Dancing Script', cursive;
+}
+
+.fun-button:hover {
+    transform: scale(1.1);
+}
+
+/* ---------- MESSAGES ---------- */
+.message {
+    position: absolute;
+    left: 20px;
+    font-size: 26px; /* increased */
+    color: #ffd1e8;
+    opacity: 0;
+    animation: showMsg 1s forwards;
+    text-shadow: 0 0 8px rgba(255, 192, 222, 0.8);
+    font-family: 'Great Vibes', cursive;
+}
+
+.centralWish {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    font-size: 50px; /* increased */
+    color: #ff99c8;
+    opacity: 0;
+    animation: showCentral 2s forwards;
+    text-shadow: 0 0 10px rgba(255, 153, 200, 0.8);
+    font-family: 'Great Vibes', cursive;
+}
+
+@keyframes showMsg {
+    to { opacity: 1; }
+}
+@keyframes showCentral {
+    0% { opacity: 0; transform: scale(0.8); }
+    100% { opacity: 1; transform: scale(1); }
+}
+
+/* ---------- HEARTS ---------- */
+.heart {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    background: red;
+    transform: scale(0);
+    opacity: 0;
+    clip-path: polygon(50% 0%, 61% 10%, 70% 25%, 70% 50%, 50% 80%, 30% 50%, 30% 25%, 39% 10%);
+    animation: pop 0.6s forwards;
+}
+@keyframes pop {
+    0% { transform: scale(0); opacity: 0; }
+    50% { transform: scale(1.2); opacity: 1; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+/* ---------- CANVAS ---------- */
+canvas {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+}
+</style>
+</head>
+<body>
+
+<div class="button-container">
+  <button class="fun-button">Click Me ❤️</button>
+</div>
+
+<canvas id="canvas"></canvas>
+
+<audio id="natureSound" src="night-nature.mp3" loop></audio>
+<audio id="melodySound" src="soft-melody.mp3" loop></audio>
+
+<script>
+// Canvas setup
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
+canvas.width = innerWidth;
+canvas.height = innerHeight;
+
+// ---------- STARS ----------
+const starColors = ["#ffffff","#ffe6a7","#ffb3c6","#a0cfff","#d1a0ff"];
+let stars = [];
+for(let i=0;i<200;i++){
+    stars.push({
+        x: Math.random()*canvas.width,
+        y: Math.random()*canvas.height,
+        r: Math.random()*2+1.0, // increased star size (was 0.5-2)
+        alpha: Math.random(),
+        dAlpha: 0.01 + Math.random()*0.02,
+        color: starColors[Math.floor(Math.random()*starColors.length)]
+    });
+}
+let shootingStars = [];
+function createShootingStar() {
+    shootingStars.push({
+        x: Math.random()*canvas.width,
+        y: Math.random()*canvas.height/2,
+        len: 80 + Math.random()*50,
+        speed: 6 + Math.random()*4,
+        angle: Math.PI/4
+    });
+}
+function hexToRgb(hex){
+    const bigint = parseInt(hex.slice(1),16);
+    const r = (bigint >> 16) & 255;
+    const g = (bigint >> 8) & 255;
+    const b = bigint & 255;
+    return r+","+g+","+b;
+}
+
+// ---------- TREE ----------
+function drawBranch(ctx, x, y, length, angle, width) {
+    if(length < 8) {
+        drawLeaf(ctx, x, y, 6 + Math.random()*4, "#800020"); 
+        return;
+    }
+    ctx.save();
+    ctx.beginPath();
+    ctx.lineWidth = width;
+    ctx.lineCap = "round";
+    ctx.strokeStyle = "#6b4b3e"; 
+    ctx.moveTo(x, y);
+    const x2 = x + length * Math.cos(angle);
+    const y2 = y + length * Math.sin(angle);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+    ctx.restore();
+    drawBranch(ctx, x2, y2, length*0.75, angle - 0.4, width*0.7);
+    drawBranch(ctx, x2, y2, length*0.75, angle + 0.4, width*0.7);
+}
+
+function drawLeaf(ctx, x, y, size, color) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.scale(size/20, size/20); 
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(10, -10);
+    ctx.bezierCurveTo(15, -20, 30, -10, 0, 20);
+    ctx.bezierCurveTo(-30, -10, -15, -20, -10, -10);
+    ctx.closePath();
+    ctx.fillStyle = color;
+    ctx.fill();
+    if(Math.random() < 0.3) {
+        ctx.strokeStyle = "#ffccd5";
+        ctx.lineWidth = 1 + Math.random();
+        ctx.stroke();
+    }
+    ctx.restore();
+}
+
+// ---------- CRESCENT MOON ----------
+let moonGlow = 0;
+let glowDirection = 0.01;
+function drawCrescentMoon(ctx, x, y, radius) {
+    moonGlow += glowDirection;
+    if(moonGlow > 0.5 || moonGlow < 0) glowDirection *= -1;
+
+    const gradient = ctx.createRadialGradient(x, y, radius*0.5, x, y, radius);
+    gradient.addColorStop(0, `rgba(255, 255, 200, ${0.9 + moonGlow})`);
+    gradient.addColorStop(1, `rgba(255, 255, 200, ${0.2 + moonGlow})`);
+    ctx.fillStyle = gradient;
+    ctx.beginPath();
+    ctx.arc(x, y, radius, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.globalCompositeOperation = "destination-out";
+    ctx.beginPath();
+    ctx.arc(x + radius*0.5, y - radius*0.1, radius*0.9, 0, Math.PI*2);
+    ctx.fill();
+    ctx.globalCompositeOperation = "source-over";
+}
+
+// ---------- ELEMENTS ----------
+let leaves = [];
+for(let i=0;i<30;i++){
+    leaves.push({
+        x: canvas.width*0.65 + (Math.random()-0.5)*100,
+        y: canvas.height - Math.random()*200,
+        size: 6 + Math.random()*4,
+        dx: (Math.random()-0.5)*0.5,
+        dy: -0.5 - Math.random()*0.5
+    });
+}
+
+let glitters = [];
+let balloons = [];
+for(let i=0;i<15;i++){
+    balloons.push({
+        x: Math.random()*canvas.width,
+        y: canvas.height + Math.random()*200,
+        size: 20 + Math.random()*20,
+        dy: 1 + Math.random()*1.5
+    });
+}
+
+let lanterns = [];
+for(let i=0;i<10;i++){
+    lanterns.push({
+        x: Math.random()*canvas.width,
+        y: canvas.height + Math.random()*200,
+        size: 15 + Math.random()*10,
+        dy: 0.5 + Math.random()*0.7,
+        dx: (Math.random()-0.5)*0.3,
+        glow: 0.5 + Math.random()*0.5
+    });
+}
+
+// ---------- UPDATES ----------
+function updateLeaves(){ for(let leaf of leaves){ leaf.x += leaf.dx; leaf.y += leaf.dy; if(leaf.y < 0){ leaf.y = canvas.height - 50; leaf.x = canvas.width*0.65 + (Math.random()-0.5)*100; } if(Math.random()<0.05){ glitters.push({x:leaf.x, y:leaf.y, size:1+Math.random()*2, dy:2+Math.random()*1.5}); } } }
+function updateGlitters(){ for(let i=glitters.length-1;i>=0;i--){ glitters[i].y += glitters[i].dy; if(glitters[i].y>canvas.height) glitters.splice(i,1); } }
+function updateBalloons(){ for(let balloon of balloons){ balloon.y -= balloon.dy; if(balloon.y + balloon.size < 0){ balloon.y = canvas.height + Math.random()*50; balloon.x = Math.random()*canvas.width; } } }
+function updateLanterns(){ for(let lantern of lanterns){ lantern.y -= lantern.dy; lantern.x += lantern.dx; lantern.glow = 0.5 + Math.sin(Date.now()/500 + lantern.y)*0.5; if(lantern.y + lantern.size < 0){ lantern.y = canvas.height + Math.random()*50; lantern.x = Math.random()*canvas.width; } } }
+function updateStars(){ for(let star of stars){ star.alpha += star.dAlpha; if(star.alpha > 1 || star.alpha < 0) star.dAlpha *= -1; } if(Math.random()<0.005) createShootingStar(); for(let i=shootingStars.length-1;i>=0;i--){ shootingStars[i].x += shootingStars[i].speed * Math.cos(shootingStars[i].angle); shootingStars[i].y += shootingStars[i].speed * Math.sin(shootingStars[i].angle); if(shootingStars[i].x>canvas.width || shootingStars[i].y>canvas.height) shootingStars.splice(i,1); } }
+
+// ---------- DRAW ----------
+function drawStars(){ 
+    for(let star of stars){ 
+        ctx.shadowBlur = 8; 
+        ctx.shadowColor = star.color; 
+        ctx.fillStyle = `rgba(${hexToRgb(star.color)},${star.alpha})`; 
+        ctx.beginPath(); 
+        ctx.arc(star.x, star.y, star.r, 0, Math.PI*2); 
+        ctx.fill(); 
+    } 
+    ctx.shadowBlur = 0; 
+    for(let star of shootingStars){ 
+        ctx.strokeStyle = "rgba(255,255,255,0.9)"; 
+        ctx.lineWidth = 2; 
+        ctx.beginPath(); 
+        ctx.moveTo(star.x, star.y); 
+        ctx.lineTo(star.x - star.len*Math.cos(star.angle), star.y - star.len*Math.sin(star.angle)); 
+        ctx.stroke(); 
+    } 
+}
+function drawLeavesAndGlitters(){ for(let leaf of leaves){ drawLeaf(ctx, leaf.x, leaf.y, leaf.size, "#800020"); } ctx.fillStyle = "#fff9a0"; for(let glitter of glitters){ ctx.beginPath(); ctx.arc(glitter.x, glitter.y, glitter.size,0,Math.PI*2); ctx.fill(); } }
+function drawBalloons(){ for(let balloon of balloons){ const gradient = ctx.createRadialGradient(balloon.x - balloon.size*0.2, balloon.y - balloon.size*0.3, 5, balloon.x, balloon.y, balloon.size); gradient.addColorStop(0, "#ff6b81"); gradient.addColorStop(1, "#c2002a"); ctx.fillStyle = gradient; ctx.beginPath(); ctx.ellipse(balloon.x, balloon.y, balloon.size*0.6, balloon.size, 0, 0, Math.PI*2); ctx.fill(); ctx.strokeStyle = "#800000"; ctx.lineWidth = 2; ctx.stroke(); ctx.strokeStyle = "#555"; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(balloon.x, balloon.y + balloon.size); ctx.lineTo(balloon.x, balloon.y + balloon.size + 25); ctx.stroke(); ctx.fillStyle = "rgba(255,255,255,0.5)"; ctx.beginPath(); ctx.ellipse(balloon.x - balloon.size*0.2, balloon.y - balloon.size*0.3, balloon.size*0.15, balloon.size*0.25, 0, 0, Math.PI*2); ctx.fill(); } }
+function drawLanterns(){ for(let lantern of lanterns){ ctx.save(); ctx.fillStyle = `rgba(255,180,100,${lantern.glow})`; ctx.beginPath(); ctx.ellipse(lantern.x, lantern.y, lantern.size*0.6, lantern.size, 0,0,Math.PI*2); ctx.fill(); ctx.restore(); ctx.strokeStyle = "rgba(200,150,80,0.5)"; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(lantern.x, lantern.y+lantern.size); ctx.lineTo(lantern.x, lantern.y+lantern.size+10); ctx.stroke(); } }
+
+// ---------- ANIMATION LOOP ----------
+function animateCanvas(){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    drawStars();
+    drawCrescentMoon(ctx, canvas.width - 80, 80, 50);
+    drawBranch(ctx, canvas.width*0.65, canvas.height-50, 160, -Math.PI/2, 12);
+    updateLeaves();
+    updateGlitters();
+    drawLeavesAndGlitters();
+    updateBalloons();
+    drawBalloons();
+    updateLanterns();
+    drawLanterns();
+    updateStars();
+    requestAnimationFrame(animateCanvas);
+}
+
+// ---------- BUTTON HEARTS ----------
+const button = document.querySelector('.fun-button');
+const container = document.querySelector('.button-container');
+button.addEventListener('mouseenter', () => {
+    const interval = setInterval(createHeart, 100);
+    button.dataset.heartInterval = interval;
+});
+button.addEventListener('mouseleave', () => { clearInterval(button.dataset.heartInterval); });
+function createHeart() {
+    const heart = document.createElement('div');
+    heart.className = 'heart';
+    heart.style.left = Math.random() * 100 + '%';
+    heart.style.top = Math.random() * 100 + '%';
+    heart.style.width = (10 + Math.random() * 20) + 'px';
+    heart.style.height = heart.style.width;
+    container.appendChild(heart);
+    setTimeout(() => { heart.remove(); }, 800);
+}
+
+// ---------- START ANIMATION ----------
+button.addEventListener('click', () => {
+    button.style.display = 'none';
+    clearInterval(button.dataset.heartInterval);
+    document.getElementById("natureSound").play();
+    document.getElementById("melodySound").play();
+    startAnimation();
+});
+function startAnimation(){
+    animateCanvas();
+    if(!document.querySelector(".centralWish")) {
+        const centralWish = document.createElement("div");
+        centralWish.className="centralWish";
+        centralWish.innerText="Happy Birthday My Love ❤️";
+        document.body.appendChild(centralWish);
+    }
+    const messages = [
+        "You shine even in the dark 🌸",
+        "May your dreams glow bright 💕",
+        "Always keep blooming 💖"
+    ];
+    messages.forEach((text,i)=>{
+        setTimeout(()=>{
+            const msg = document.createElement("div");
+            msg.className="message";
+            msg.style.top = (80 + i*50)+"px"; // spacing a bit more for bigger font
+            msg.innerText=text;
+            document.body.appendChild(msg);
+        }, 2000 + i*1500);
+    });
+}
+
+// ---------- RESIZE ----------
+window.addEventListener('resize', () => {
+    canvas.width = innerWidth;
+    canvas.height = innerHeight;
+});
+</script>
+</body>
+</html>
